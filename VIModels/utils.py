@@ -55,9 +55,19 @@ def init_temp_anneal(init_tau, min_tau, rate):
         return np.maximum(init_tau*np.exp(-rate*i), min_tau)
     return temp_anneal
 
-def multitask_loss(y_true, x_true, y_pred, p_x):
-    cce = tfk.losses.CategoricalCrossentropy()
-    intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=y_pred), axis=0, name="Sum of CE over Generated Preds")
-    neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_sum(x.log_prob(x_true),1), elems=p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")
+'''
+logits_py = tf.ones_like(logits_y) * 1./n_class 
+p_y = tfd.RelaxedOneHotCategorical(tau, logits=logits_py)
+'''
 
-    return intermediate + neg_log_likelihood
+def init_loss(n_class):
+    def multitask_loss(y_true, x_true, y_pred, q_y, p_x, p_y, y):
+
+        kl_qp = q_y.log_prob(y) - p_y.log_prob(y) # Need to do a lot of these
+        KL = tf.reduce_sum(kl_qp, 1)
+
+        cce = tfk.losses.CategoricalCrossentropy()
+        intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=y_pred), axis=0, name="Sum of CE over Generated Preds")
+        neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_sum(x.log_prob(x_true),1), elems=p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")
+
+        return intermediate + neg_log_likelihood -KL

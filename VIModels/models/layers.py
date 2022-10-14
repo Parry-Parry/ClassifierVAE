@@ -39,15 +39,15 @@ class decoder(tfk.Layer):
 
     def call(self, logits, training=False):
         q_y = self.gumbel(logits, self.tau)
-        sample = q_y.sample()
-        
-        decoded = self.decoder_stack(sample)
+        y = q_y.sample()
+
+        decoded = self.decoder_stack(y)
         x_logits = self.reconstruct(decoded)
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.sample()
 
-        return x_mean, p_x, q_y
+        return x_mean, y, p_x, q_y
 
 class head(tfk.layer):
     def __init__(self, config, **kwargs) -> None:
