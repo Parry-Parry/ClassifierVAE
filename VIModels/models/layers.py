@@ -9,7 +9,7 @@ tfd = tfp.distributions
 
 class encoder(tfk.Layer):
     def __init__(self, config, **kwargs) -> None:
-        super().__init__(name='encoder', **kwargs)
+        super(encoder, self).__init__(name='encoder', **kwargs)
         self.encoder_stack = tfk.Sequential(
             [tfkl.Dense(size, activation=config.dense_activation) for size in config.stack]
             ) 
@@ -23,7 +23,7 @@ class encoder(tfk.Layer):
 
 class decoder(tfk.Layer):
     def __init__(self, config, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super(decoder, self).__init__(**kwargs)
         self.gumbel = tfd.RelaxedOneHotCategorical # Gumbel-Softmax
         self.bernoulli = tfd.Bernoulli # Bernoulli for Reconstruction
         self.tau = config.tau # Temperature
@@ -47,7 +47,7 @@ class decoder(tfk.Layer):
 
 class head(tfk.layer):
     def __init__(self, config, **kwargs) -> None:
-        super().__init__(name='encoder', **kwargs)
+        super(head, self).__init__(name='encoder', **kwargs)
 
         self.intermediate = config.intermediate() # Task Specific
         self.classification = tfk.Sequential(
