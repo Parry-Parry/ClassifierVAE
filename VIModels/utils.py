@@ -6,20 +6,24 @@ import tensorflow_probability as tfp
 
 tfd = tfp.distributions
 
-class Config(NamedTuple):
-    depth : Any 
+class Model_Config(NamedTuple):
     num_heads : Any 
-    head : Any
     encoder : Any
-    decoder : Any 
+    decoder : Any
+    head : Any
 
-def init_sample_func(eps):
-    def sample(logits, tau):
-        shape = tfm.reduce_prod(logits.shape)
-        gumbel = tfd.Gumbel(loc=0., scale=tf.ones(shape, dtype=tf.float32))
-        y = logits + tf.reshape(gumbel.sample(), list(logits.shape))
-        y = tfk.activations.softmax(y / tau)
-        return y
-    
-    return sample
+class Encoder_Config(NamedTuple):
+    n_class : Any
+    n_dist : Any 
+    stack : Any
+    dense_activation : Any
 
+class Decoder_Config(NamedTuple):
+    n_class : Any
+    n_dist : Any 
+    stack : Any
+    tau : Any
+    dense_activation : Any
+
+class Head_Config(NamedTuple):
+    dense_activation : Any
