@@ -37,7 +37,7 @@ def init_max(hard=False):
         totals = tfm.reduce_sum(proba, axis=0)
         probs = tf.map_fn(lambda x : tf.one_hot(tf.argmax(x), depth=x.shape[-1], on_value=1, off_value=0, dtype=tf.float32), elems=totals)
         return probs
-        
+
     def soft_max_proba(self, proba):
         totals = tfm.reduce_sum(proba, axis=0)
         norm=np.linalg.norm(totals)
@@ -49,3 +49,15 @@ def init_max(hard=False):
         return hard_max_proba
     else:
         return soft_max_proba
+
+def init_temp_anneal(init_tau, min_tau, rate):
+    def temp_anneal(i):
+        return np.maximum(init_tau*np.exp(-rate*i), min_tau)
+    return temp_anneal
+
+def multitask_loss(y_true, x_true, y_pred, p_x):
+    cce = tfk.losses.CategoricalCrossentropy()
+    intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=y_pred), axis=0, name="Sum of CE over Generated Preds")
+    neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_sum(x.log_prob(x_true),1), elems=p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")
+
+    return intermediate + neg_log_likelihood

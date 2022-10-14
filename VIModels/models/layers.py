@@ -10,6 +10,8 @@ tfd = tfp.distributions
 class encoder(tfk.Layer):
     def __init__(self, config, **kwargs) -> None:
         super(encoder, self).__init__(name='encoder', **kwargs)
+        self.n_class = config.n_class 
+        self.n_dist = config.n_dist
         self.encoder_stack = tfk.Sequential(
             [tfkl.Dense(size, activation=config.dense_activation) for size in config.stack]
             ) 
@@ -17,9 +19,9 @@ class encoder(tfk.Layer):
     
     def call(self, input_tensor, training=False):
         latent = self.encoder_stack(input_tensor)
-        logits = self.dense_logits(latent)
+        logits_y = self.dense_logits(latent)
 
-        return logits
+        return tf.reshape(logits_y, [-1, self.n_dist, self.n_class])
 
 class decoder(tfk.Layer):
     def __init__(self, config, **kwargs) -> None:
@@ -36,14 +38,16 @@ class decoder(tfk.Layer):
         self.reconstruct = tfkl.Dense(config.out_dim)
 
     def call(self, logits, training=False):
-        sample = self.gumbel(logits, self.tau).sample()
+        q_y = self.gumbel(logits, self.tau)
+        sample = q_y.sample()
+        
         decoded = self.decoder_stack(sample)
         x_logits = self.reconstruct(decoded)
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.sample()
 
-        return x_mean
+        return x_mean, p_x, q_y
 
 class head(tfk.layer):
     def __init__(self, config, **kwargs) -> None:

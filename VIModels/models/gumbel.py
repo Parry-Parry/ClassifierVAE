@@ -19,10 +19,10 @@ class multihead_gumbel(tfk.Model):
     def call(self, input_tensor, training=False):
         x = input_tensor
         if training:
-            encoding = self.encoder(x)
-            samples = [decoder(encoding, training) for decoder in self.decoders]
+            logits_y = self.encoder(x)
+            samples = [decoder(logits_y, training) for decoder in self.decoders]
             preds = [head(sample, training) for head, sample in zip(self.heads, samples)]
-            return preds, encoding, self.max_proba(preds)
+            return preds, logits_y, self.max_proba(preds)
         preds = [head(x, training) for head in self.heads]
         return self.max_proba(preds)
         
@@ -31,16 +31,15 @@ class gumbel_classifier(tfk.Model):
     def __init__(self, config) -> None:
         super(gumbel_classifier, self).__init__()
         self.encoder = config.encoder()
-        
         self.decoder = config.decoder()
         self.head = config.head()
 
     def call(self, input_tensor, training=False):
         x = input_tensor
         if training:
-            encoding = self.encoder(x)
-            samples = self.decoder(x, training)
+            logits_y = self.encoder(x)
+            samples, p_x, q_y = self.decoder(logits_y, training)
             preds = self.head(samples, training)
-            return preds, encoding
+            return preds, logits_y, p_x, q_y
         preds = self.head(x, training)
         return preds
