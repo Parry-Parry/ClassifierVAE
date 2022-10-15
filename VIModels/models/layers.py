@@ -73,11 +73,11 @@ def init_encoder(config, **kwargs):
     return new_encoder
 
 def init_decoder(config, **kwargs):
-    def new_decoder(name):
+    def new_decoder(name='decoder'):
         return encoder(config, name, **kwargs)
     return new_decoder
 
 def init_head(config, **kwargs):
-    def new_head(name):
+    def new_head(name='head'):
         return head(config, name, **kwargs)
     return new_head
