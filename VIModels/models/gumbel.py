@@ -1,4 +1,4 @@
-from VIModels.utils import init_max
+from VIModels.utils import Encoder_Output, Model_Output, create_py, init_max
 import tensorflow as tf 
 import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
@@ -16,14 +16,21 @@ class multihead_gumbel(tfk.Model):
         self.decoders = [config.decoder(f'decoder_{i}') for i in range(config.num_heads)]
         self.heads = [config.head(f'head_{i}') for i in range(config.num_heads)]
 
+        self.n_class = config.n_class
+
     def call(self, input_tensor, training=False):
         x = input_tensor
         if training:
-            logits_y = self.encoder(x)
-            samples = [decoder(logits_y, training) for decoder in self.decoders]
+            encoder_output = self.encoder(x)
+            decoder_outputs = [decoder(encoder_output.logits_y, training) for decoder in self.decoders]
+
+            samples = [output.recons for output in decoder_outputs]
             preds = [head(sample, training) for head, sample in zip(self.heads, samples)]
-            return preds, logits_y, self.max_proba(preds)
+
+            return Model_Output(y_pred=preds, p_x=[output.p_x for output in decoder_outputs], p_y=encoder_output.p_y, q_y=[output.q_y for output in decoder_outputs], gen_y=encoder_output.logits_y)
+            
         preds = [head(x, training) for head in self.heads]
+
         return self.max_proba(preds)
         
 
@@ -34,12 +41,15 @@ class gumbel_classifier(tfk.Model):
         self.decoder = config.decoder()
         self.head = config.head()
 
+        self.n_class = config.n_class
+
     def call(self, input_tensor, training=False):
         x = input_tensor
         if training:
-            logits_y = self.encoder(x)
-            samples, p_x, q_y = self.decoder(logits_y, training)
-            preds = self.head(samples, training)
-            return preds, logits_y, p_x, q_y
+            encoder_output = self.encoder(x)
+            decoder_output = self.decoder(encoder_output.logits_y, training)
+            preds = self.head(decoder_output.recons, training)
+            return Model_Output(y_pred=preds, p_x=decoder_output.p_x, p_y=encoder_output.p_y, q_y=decoder_output.q_y, gen_y=encoder_output.logits_y)
         preds = self.head(x, training)
+
         return preds
