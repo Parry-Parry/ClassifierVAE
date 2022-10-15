@@ -1,4 +1,4 @@
-from VIModels.utils import Encoder_Output, Model_Output, create_py, init_max
+from ClassiferVAE.utils import Encoder_Output, Model_Output, create_py, init_max
 import tensorflow as tf 
 import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
