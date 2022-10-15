@@ -85,10 +85,9 @@ def compute_py(logits_y, n_class, tau):
 
 
 
-def init_loss(y_true, x_true):
+def init_loss():
     cce = tfk.losses.CategoricalCrossentropy()
-
-    def multitask_loss(output):
+    def multitask_loss(y_true, x_true, output):
         qp_pairs = [q.log_prob(output.gen_y) - p.log_prob(output.gen_y) for p, q in zip(output.p_y, output.q_y)]
         KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Distributions")
 
