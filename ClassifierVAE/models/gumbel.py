@@ -1,8 +1,8 @@
-from ClassifierVAE.utils import Encoder_Output, Model_Output, create_py, init_max
+from ClassifierVAE.utils import Model_Output, init_max
 import tensorflow as tf 
-import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
 
+tfk = tf.keras 
 tfkl = tfk.layers 
 tfpl = tfp.layers 
 tfd = tfp.distributions
