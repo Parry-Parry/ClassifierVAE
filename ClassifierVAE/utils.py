@@ -33,6 +33,7 @@ class Decoder_Config(NamedTuple):
     tau : Any 
 
 class Head_Config(NamedTuple):
+    n_class : Any
     intermediate : Any # Task-specific layers
     stack : Any # Dense sizes for classifier
     dense_activation : Any
