@@ -6,6 +6,7 @@ import tensorflow as tf
 import tensorflow.keras as tfk 
 import tensorflow.math as tfm
 import tensorflow_probability as tfp 
+import tensorflow_addons as tfa
 
 tfd = tfp.distributions
 
@@ -51,6 +52,12 @@ class Model_Output(NamedTuple):
     p_y : Any # Fixed Prior
     q_y : Any # Gumbel Prior
     gen_y : Any # Encoder Output
+
+class Test_Results(NamedTuple):
+    acc: Any
+    f1: Any 
+    rec: Any 
+    prec: Any
 
 
 def init_max(hard=False):
@@ -106,3 +113,20 @@ def init_loss(multihead=False):
     
     if multihead: return ensemble_loss
     return sequential_loss
+
+def testing(test_set, model, n_classes=10, baseline=False):
+    test_acc_metric = tfk.metrics.CategoricalAccuracy()
+    test_f1_metric = tfa.metrics.F1Score(num_classes=n_classes)
+    test_recall_metric = tfk.metrics.Recall()
+    test_precision_metric = tfk.metrics.Precision()
+
+    for x_batch, y_batch in test_set:
+        test_pred = model(x_batch, training=False)
+        test_acc_metric.update_state(y_batch, test_pred)
+        test_f1_metric.update_state(y_batch, test_pred)
+        test_recall_metric.update_state(y_batch, test_pred)
+        test_precision_metric.update_state(y_batch, test_pred)
+
+    results = test_results(test_acc_metric.result(), test_f1_metric.result(), test_recall_metric.result(), test_precision_metric.result())
+
+    return results
