@@ -22,7 +22,7 @@ class encoder(tfk.Layer):
     def call(self, input_tensor, training=False):
         latent = self.encoder_stack(input_tensor)
         logits_y = self.dense_logits(latent)
-        p_y = compute_py(logits_y, self.n_class, self.tau)   
+        p_y = compute_py(logits_y, self.n_class, self.tau.read_value())   
 
         return Encoder_Output(tf.reshape(logits_y, [-1, self.n_dist, self.n_class]), p_y)
 
@@ -41,7 +41,7 @@ class decoder(tfk.Layer):
         self.reconstruct = tfkl.Dense(config.out_dim)
 
     def call(self, logits, training=False):
-        q_y = self.gumbel(logits, self.tau)
+        q_y = self.gumbel(logits, self.tau.read_value())
         y = q_y.sample()
 
         decoded = self.decoder_stack(y)

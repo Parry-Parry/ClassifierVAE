@@ -114,7 +114,7 @@ def init_loss(multihead=False):
     if multihead: return ensemble_loss
     return sequential_loss
 
-def testing(test_set, model, n_classes=10, baseline=False):
+def testing(test_set, model, n_classes=10):
     test_acc_metric = tfk.metrics.CategoricalAccuracy()
     test_f1_metric = tfa.metrics.F1Score(num_classes=n_classes)
     test_recall_metric = tfk.metrics.Recall()
@@ -127,6 +127,6 @@ def testing(test_set, model, n_classes=10, baseline=False):
         test_recall_metric.update_state(y_batch, test_pred)
         test_precision_metric.update_state(y_batch, test_pred)
 
-    results = test_results(test_acc_metric.result(), test_f1_metric.result(), test_recall_metric.result(), test_precision_metric.result())
+    results = Test_Results(test_acc_metric.result(), test_f1_metric.result(), test_recall_metric.result(), test_precision_metric.result())
 
     return results

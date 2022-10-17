@@ -56,7 +56,7 @@ class wrapper():
             
             if self.temp_anneal:
                 if step % self.step_anneal:
-                    self.temp_var = self.temp_anneal(self.temp_var)
+                    self.temp_var.assign(self.temp_anneal(step))
             
         results = testing(test, self.model, self.model.n_class)
 
