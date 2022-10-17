@@ -16,6 +16,7 @@ class Model_Config(NamedTuple):
     decoder : Any # Decoder function
     head : Any # Classifier function
     n_class : Any # Number of Classes
+    hard : Any # argmax (T) or softmax (F)
 
 class Encoder_Config(NamedTuple):
     n_class : Any 
@@ -28,13 +29,22 @@ class Decoder_Config(NamedTuple):
     n_class : Any 
     n_dist : Any 
     stack : Any # Dense sizes for decoder
-    tau : Any 
     dense_activation : Any
+    tau : Any 
 
 class Head_Config(NamedTuple):
     intermediate : Any # Task-specific layers
     stack : Any # Dense sizes for classifier
     dense_activation : Any
+
+class Wrapper_Config(NamedTuple):
+    model : Any 
+    loss : Any 
+    optim : Any 
+    epochs : Any 
+    temp : Any 
+    acc_metric : Any 
+
 
 class Encoder_Output(NamedTuple):
     logits_y : Any

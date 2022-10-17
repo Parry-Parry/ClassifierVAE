@@ -11,14 +11,12 @@ class wrapper():
         self.loss = proc.loss
 
         if proc.temp:
-            self.temp_anneal = proc.temp[0]
-            self.step_anneal = proc.temp[1]
-            self.temp_var = proc.temp[2]
+            self.temp_anneal = proc.temp_anneal
         else:
             self.temp_anneal = None
         
-        self.train_metric = proc.train_metric 
-        self.val_metric = proc.val_metric
+        self.train_metric = proc.acc_metric() 
+        self.val_metric = proc.acc_metric()
     
     def get_model(self):
         return self.model 
@@ -28,7 +26,7 @@ class wrapper():
 
     def fit(self, train, test, logger):
         losses = []
-        for epoch in range(self.epochs)
+        for epoch in range(self.epochs):
             for step, (x_batch, y_batch) in enumerate(train): 
                 with tf.GradientTape() as tape:
                     output = self.model(x_batch, training=True)
