@@ -9,7 +9,7 @@ tfpl = tfp.layers
 tfd = tfp.distributions
 
 
-class encoder(tfk.Layer):
+class encoder(tfkl.Layer):
     def __init__(self, config, **kwargs) -> None:
         super(encoder, self).__init__(name='encoder', **kwargs)
         self.n_class = config.n_class 
@@ -27,7 +27,7 @@ class encoder(tfk.Layer):
 
         return Encoder_Output(tf.reshape(logits_y, [-1, self.n_dist, self.n_class]), p_y)
 
-class decoder(tfk.Layer):
+class decoder(tfkl.Layer):
     def __init__(self, config, **kwargs) -> None:
         super(decoder, self).__init__(**kwargs)
         self.gumbel = tfd.RelaxedOneHotCategorical # Gumbel-Softmax
@@ -53,7 +53,7 @@ class decoder(tfk.Layer):
 
         return Decoder_Output(x_mean, y, p_x, q_y)
 
-class head(tfk.layer):
+class head(tfkl.layer):
     def __init__(self, config, **kwargs) -> None:
         super(head, self).__init__(name='encoder', **kwargs)
 

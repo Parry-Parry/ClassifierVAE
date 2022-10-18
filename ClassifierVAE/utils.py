@@ -171,4 +171,30 @@ def aggregate(data, K, dir, seed):
         with open(path, 'wb') as f:
             pickle.dump((aggr_x, aggr_y, avg), f)
 
-    return avg, shape, Dataset(data.name, aggr_x, data.x_test, aggr_y, data.y_test)
+    return Dataset(data.name, aggr_x, data.x_test, aggr_y, data.y_test)
+
+def build_dataset(dataset, K, path, batch_size, seed):
+    if K != 1:
+        dataset = aggregate(dataset, K, path, seed)
+
+    if dataset.name == 'CIFAR100':
+        n_classes = 100
+    else:
+        n_classes = len(np.unique(dataset.y_train))
+
+    if len(dataset.x_train.shape) == 3:
+        x_train = np.expand_dims(dataset.x_train, axis=-1)
+        x_test = np.expand_dims(dataset.x_test, axis=-1)
+    else:
+        x_train = dataset.x_train
+        x_test = dataset.x_test
+
+    y_train = tfk.utils.to_categorical(dataset.y_train, n_classes)
+    y_test = tfk.utils.to_categorical(dataset.y_test, n_classes)
+
+    tf_convert = lambda x, y, types : (tf.data.Dataset.from_tensor_slices((tf.cast(x, types[0]), tf.cast(y, types[1])))).shuffle(len(dataset.x_train)).batch(batch_size, drop_remainder=False).cache().prefetch(tf.data.AUTOTUNE)
+
+    train_set = tf_convert(x_train, y_train, [tf.float32, tf.uint8])
+    test_set = tf_convert(x_test, y_test, [tf.float32, tf.uint8])
+
+    return train_set, test_set, n_classes

@@ -47,8 +47,8 @@ class wrapper():
             logger.log({'epochs': epoch,
                    'loss': loss_value,
                    'acc': float(train_acc),
-                   'val_acc': float(val_acc)}
-                   'temperature': self.temp_var)
+                   'val_acc': float(val_acc),
+                   'temperature': self.temp_var})
             
             if self.temp_anneal:
                 if step % self.step_anneal:
