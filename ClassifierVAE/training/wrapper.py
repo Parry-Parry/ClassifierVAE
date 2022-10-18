@@ -25,13 +25,11 @@ class wrapper():
         self.model = model
 
     def fit(self, train, test, logger):
-        losses = []
         for epoch in range(self.epochs):
             for step, (x_batch, y_batch) in enumerate(train): 
                 with tf.GradientTape() as tape:
                     output = self.model(x_batch, training=True)
                     loss_value = self.loss(y_batch, x_batch, output)
-                losses.append(loss_value)
                 grads = tape.gradient(loss_value, self.model.trainable_weights)
                 self.optim.apply_gradients(zip(grads, self.model.trainable_weights))
             self.train_metric.update_state(y_batch, None)

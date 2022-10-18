@@ -1,4 +1,5 @@
-from ClassifierVAE.utils import Model_Output, init_max
+from ClassifierVAE.utils import init_max
+from ClassifierVAE.structures import Model_Output
 import tensorflow as tf 
 import tensorflow_probability as tfp 
 
@@ -10,6 +11,7 @@ tfd = tfp.distributions
 class multihead_gumbel(tfk.Model):
     def __init__(self, config) -> None:
         super(multihead_gumbel, self).__init__()
+        self.input = config.inputs
         self.max_proba = init_max(hard=config.hard)
 
         self.encoder = config.encoder()
@@ -19,7 +21,7 @@ class multihead_gumbel(tfk.Model):
         self.n_class = config.n_class
 
     def call(self, input_tensor, training=False):
-        x = input_tensor
+        x = self.input(input_tensor)
         if training:
             encoder_output = self.encoder(x)
             decoder_outputs = [decoder(encoder_output.logits_y, training) for decoder in self.decoders]
@@ -40,6 +42,7 @@ class multihead_gumbel(tfk.Model):
 class gumbel_classifier(tfk.Model):
     def __init__(self, config) -> None:
         super(gumbel_classifier, self).__init__()
+        self.input = config.inputs
         self.encoder = config.encoder()
         self.decoder = config.decoder()
         self.head = config.head()
@@ -47,7 +50,7 @@ class gumbel_classifier(tfk.Model):
         self.n_class = config.n_class
 
     def call(self, input_tensor, training=False):
-        x = input_tensor
+        x = self.input(input_tensor)
         if training:
             encoder_output = self.encoder(x)
             decoder_output = self.decoder(encoder_output.logits_y, training)

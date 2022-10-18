@@ -1,6 +1,6 @@
-from typing import NamedTuple, Any
-
-import numpy as np
+import collections
+from pathlib import Path, PurePath
+import pickle
 
 import tensorflow as tf
 import tensorflow.keras as tfk 
@@ -8,68 +8,16 @@ import tensorflow.math as tfm
 import tensorflow_probability as tfp 
 import tensorflow_addons as tfa
 
+from tensorflow.keras.datasets import cifar100, cifar10, mnist
+from ClassifierVAE.structures import Test_Results, Dataset
+import numpy as np
+from sklearn.cluster import KMeans
+
 tfd = tfp.distributions
 
-class Model_Config(NamedTuple):
-    num_heads : Any # How many decoder-classifer pairs
-    encoder : Any # Encoder function
-    decoder : Any # Decoder function
-    head : Any # Classifier function
-    n_class : Any # Number of Classes
-    hard : Any # argmax (T) or softmax (F)
-
-class Encoder_Config(NamedTuple):
-    n_class : Any 
-    n_dist : Any # Number of categorical distributions
-    stack : Any # Dense sizes for encoder
-    dense_activation : Any # Activation function
-    tau : Any # Temperature tf variable
-
-class Decoder_Config(NamedTuple):
-    n_class : Any 
-    n_dist : Any 
-    stack : Any # Dense sizes for decoder
-    dense_activation : Any
-    tau : Any 
-
-class Head_Config(NamedTuple):
-    n_class : Any
-    intermediate : Any # Task-specific layers
-    stack : Any # Dense sizes for classifier
-    dense_activation : Any
-
-class Wrapper_Config(NamedTuple):
-    model : Any 
-    loss : Any 
-    optim : Any 
-    epochs : Any 
-    temp : Any 
-    acc_metric : Any 
-
-
-class Encoder_Output(NamedTuple):
-    logits_y : Any
-    p_y : Any # Fixed Prior
-
-class Decoder_Output(NamedTuple):
-    recons : Any # Reconstruced x
-    gen_y : Any # Generated Logits
-    p_x : Any # Distribution over x
-    q_y : Any # y Prior
-
-class Model_Output(NamedTuple):
-    y_pred : Any # Classifer Output
-    p_x : Any # Reconstructed Distribition
-    p_y : Any # Fixed Prior
-    q_y : Any # Gumbel Prior
-    gen_y : Any # Encoder Output
-
-class Test_Results(NamedTuple):
-    acc: Any
-    f1: Any 
-    rec: Any 
-    prec: Any
-
+'''
+Creates a function which recieves a [num_distribution x n_class] tensor of probabilities, then takes either the argmax or softmax (normalized) of that sum
+'''
 
 def init_max(hard=False):
     
@@ -90,17 +38,26 @@ def init_max(hard=False):
     else:
         return soft_max_proba
 
+'''
+Initializes the temperature anneal callback with hyperparameters
+'''
 
 def init_temp_anneal(init_tau, min_tau, rate): # Temperature annealing during training
     def temp_anneal(i):
         return np.maximum(init_tau*np.exp(-rate*i), min_tau)
     return temp_anneal
 
+'''
+Computes the latent fixed prior over the logits of y
+'''
 
-def compute_py(logits_y, n_class, tau): # Compute Fixed Prior
+def compute_py(logits_y, n_class, tau): 
     logits_py = tf.ones_like(logits_y) * 1./n_class 
     return tfd.RelaxedOneHotCategorical(tau, logits=logits_py)
 
+'''
+Initializes multitask loss with the sum taken over ensemble components
+'''
 
 def init_loss(multihead=False):
     cce = tfk.losses.CategoricalCrossentropy()
@@ -125,6 +82,10 @@ def init_loss(multihead=False):
     if multihead: return ensemble_loss
     return sequential_loss
 
+'''
+Runs tests on standard metrics
+'''
+
 def testing(test_set, model, n_classes=10):
     test_acc_metric = tfk.metrics.CategoricalAccuracy()
     test_f1_metric = tfa.metrics.F1Score(num_classes=n_classes)
@@ -141,3 +102,73 @@ def testing(test_set, model, n_classes=10):
     results = Test_Results(test_acc_metric.result(), test_f1_metric.result(), test_recall_metric.result(), test_precision_metric.result())
 
     return results
+
+'''
+Retrieves and normalizes image datasets
+'''
+
+def retrieve_dataset(name=None, path=None):
+    normalize = lambda w, x, y, z : (w / np.float32(255), x / np.float32(255), y.astype(np.int64), z.astype(np.int64))
+    if path: 
+        """Not Implemented until testing complete on standard datasets"""
+        (x_train, y_train), (x_test, y_test) = None
+        return PurePath(path).parent.name, normalize(x_train, x_test, y_train, y_test)
+    if name:
+        if name == 'MNIST':
+            (x_train, y_train), (x_test, y_test) = mnist.load_data()
+        elif name == 'CIFAR10':
+            (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+        elif name == 'CIFAR100':
+            (x_train, y_train), (x_test, y_test) = cifar100.load_data()
+        else:
+            return None
+        return name, normalize(x_train, x_test, y_train, y_test)
+    return None, None
+
+'''
+Retrieves stored aggregate datasets by number of clusters K or generates a new aggregate set
+'''
+
+def aggregate(data, K, dir, seed):
+    pure = PurePath(dir)
+    path = pure.joinpath(data.name + str(K) + str(seed) + '.pkl')
+
+    if Path(path).exists():
+        with open(path, 'rb') as f:
+            tmp = pickle.load(f)
+            aggr_x, aggr_y, avg = tmp
+            shape = aggr_x.shape
+    else:
+        shape = tuple([K] + list(data.x_train.shape[1:]))
+        x = np.array([img.flatten() for img in data.x_train])
+        
+        if not seed: seed = np.random.randint(9999)
+        clustering = KMeans(n_clusters=K, random_state=seed).fit_predict(x)
+
+        cluster_members =  collections.defaultdict(list)
+        cluster_labels = collections.defaultdict(list)
+        for a, b, c in zip(x, data.y_train, clustering): 
+            cluster_members[c].append(a)
+            if 'CIFAR' in data.name:
+                cluster_labels[c].append(b[0])
+            else:
+                cluster_labels[c].append(b)
+        
+        centroids = []
+        labels = []
+        member_count = []
+
+        for k, v in cluster_members.items():
+            centroids.append(np.mean(v, axis=0))
+            vals, counts = np.unique(cluster_labels[k], return_counts=True)
+            labels.append(vals[np.argmax(counts)]) # majority class
+            member_count.append(len(v))
+        
+        aggr_x = np.reshape(np.array(centroids), shape)
+        aggr_y = np.array(labels)
+        avg = np.mean(member_count)
+
+        with open(path, 'wb') as f:
+            pickle.dump((aggr_x, aggr_y, avg), f)
+
+    return avg, shape, Dataset(data.name, aggr_x, data.x_test, aggr_y, data.y_test)

@@ -1,5 +1,6 @@
 import tensorflow as tf
-from ClassifierVAE.utils import Decoder_Output, Encoder_Output, compute_py 
+from ClassifierVAE.utils import compute_py 
+from ClassifierVAE.structures import Decoder_Output, Encoder_Output
 import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
 
