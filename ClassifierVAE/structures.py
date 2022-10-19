@@ -9,7 +9,7 @@ class Model_Config(NamedTuple):
     encoder : Any # Encoder function
     decoder : Any # Decoder function
     head : Any # Classifier function
-    input : Any # Task specific input spec
+    input_layer : Any # Task specific input spec
     n_class : Any # Number of Classes
     hard : Any # argmax (T) or softmax (F)
 
