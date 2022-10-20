@@ -16,21 +16,21 @@ class Model_Config(NamedTuple):
 class Encoder_Config(NamedTuple):
     n_class : Any 
     n_dist : Any # Number of categorical distributions
-    stack : Any # Dense sizes for encoder
+    stack : Any # Internal Structure
     dense_activation : Any # Activation function
     tau : Any # Temperature tf variable
 
 class Decoder_Config(NamedTuple):
     n_class : Any 
     n_dist : Any 
-    stack : Any # Dense sizes for decoder
+    stack : Any 
     dense_activation : Any
     tau : Any 
 
 class Head_Config(NamedTuple):
     n_class : Any
     intermediate : Any # Task-specific layers
-    stack : Any # Dense sizes for classifier
+    stack : Any 
     dense_activation : Any
 
 class Wrapper_Config(NamedTuple):

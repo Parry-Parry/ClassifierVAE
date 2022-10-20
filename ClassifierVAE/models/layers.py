@@ -15,9 +15,7 @@ class encoder(tfkl.Layer):
         self.n_class = config.n_class 
         self.n_dist = config.n_dist
         self.tau = config.tau
-        self.encoder_stack = tfk.Sequential(
-            [tfkl.Dense(size, activation=config.dense_activation) for size in config.stack]
-            ) 
+        self.encoder_stack = config.stack()
         self.dense_logits = tfkl.Dense(config.n_class * config.n_dist)
     
     def call(self, input_tensor, training=False):
@@ -36,9 +34,7 @@ class decoder(tfkl.Layer):
         self.n_class = config.n_class # Number of Classes
         self.n_dist = config.n_dist # Number of Categorical Distributions
 
-        self.decoder_stack = tfk.Sequential(
-            [tfkl.Flatten()]+[tfkl.Dense(size, activation=config.dense_activation) for size in config.stack]
-            )
+        self.decoder_stack = config.stack()
         self.reconstruct = tfkl.Dense(config.out_dim)
 
     def call(self, logits, training=False):
@@ -58,14 +54,13 @@ class head(tfkl.layer):
         super(head, self).__init__(name='encoder', **kwargs)
 
         self.intermediate = config.intermediate() # Task Specific
-        self.classification = tfk.Sequential(
-            [tfkl.Flatten()]+[tfkl.Dense(size, activation=config.dense_activation) for size in config.classification_stack] + [tfkl.Dense(config.n_class, activation='softmax')]
-            )
+        self.dense = config.stack()
+        self.output = tfkl.Dense(config.n_class, activation='softmax')
 
     def call(self, input_tensor, training=False):
         latent = self.intermediate(input_tensor)
-        
-        return self.classification(latent)
+        dense = self.classification(latent)
+        return self.output(dense)
 
 
 def init_encoder(config, **kwargs):
