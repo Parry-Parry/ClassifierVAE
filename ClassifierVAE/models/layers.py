@@ -45,7 +45,7 @@ class decoder(tfkl.Layer):
         x_logits = self.reconstruct(decoded)
 
         p_x = self.bernoulli(logits=x_logits)
-        x_mean = p_x.sample()
+        x_mean = p_x.mean()
 
         return Decoder_Output(x_mean, y, p_x, q_y)
 
