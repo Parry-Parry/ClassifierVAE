@@ -25,7 +25,7 @@ def init_convnet(stack, kernel_size=5, strides=(2, 2), activation='relu', dropou
             layers = layers[:-1]
         else:
             layers = [tfkl.Conv2D(size, kernel_size=kernel_size, strides=strides, activation=activation) for size in stack]
-        if flatten: layers = layers + [tfkl.flatten()]
+        if flatten: layers = layers + [tfkl.Flatten()]
         return tfk.Sequential(layers)
     return convnet 
 
@@ -39,7 +39,7 @@ def init_convtransposenet(stack, kernel_size=5, strides=(2, 2), activation='relu
             layers = layers[:-1]
         else:
             layers = [tfkl.Conv2DTranspose(size, kernel_size=kernel_size, strides=strides, activation=activation) for size in stack]
-        if flatten: layers = layers + [tfkl.flatten()]
+        if flatten: layers = layers + [tfkl.Flatten()]
         return tfk.Sequential(layers)
     return convtransposenet
 

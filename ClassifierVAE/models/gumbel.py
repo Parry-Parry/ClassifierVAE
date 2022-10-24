@@ -11,17 +11,18 @@ tfd = tfp.distributions
 class multihead_gumbel(tfk.Model):
     def __init__(self, config) -> None:
         super(multihead_gumbel, self).__init__()
-        self.input = config.inputs
+        self.input_layer = config.input_layer
         self.max_proba = init_max(hard=config.hard)
 
         self.encoder = config.encoder()
-        self.decoders = [config.decoder(f'decoder_{i}') for i in range(config.num_heads)]
-        self.heads = [config.head(f'head_{i}') for i in range(config.num_heads)]
+        self.decoders = [config.decoder(name=f'decoder_{i}') for i in range(config.num_heads)]
+        self.heads = [config.head(name=f'head_{i}') for i in range(config.num_heads)]
 
         self.n_class = config.n_class
 
     def call(self, input_tensor, training=False):
-        x = self.input(input_tensor)
+        x = input_tensor
+        if self.input_layer: x = self.input_layer(x)
         if training:
             encoder_output = self.encoder(x)
             decoder_outputs = [decoder(encoder_output.logits_y, training) for decoder in self.decoders]

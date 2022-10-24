@@ -4,6 +4,7 @@ from ClassifierVAE.structures import Decoder_Output, Encoder_Output
 import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
 
+tfm = tf.math
 tfkl = tfk.layers 
 tfpl = tfp.layers 
 tfd = tfp.distributions
@@ -23,44 +24,48 @@ class encoder(tfkl.Layer):
         logits_y = self.dense_logits(latent)
         p_y = compute_py(logits_y, self.n_class, self.tau.read_value())   
 
-        return Encoder_Output(tf.reshape(logits_y, [-1, self.n_dist, self.n_class]), p_y)
+        return Encoder_Output(tf.reshape(logits_y, [-1, self.n_dist, self.n_class, 1]), p_y)
 
 class decoder(tfkl.Layer):
-    def __init__(self, config, **kwargs) -> None:
-        super(decoder, self).__init__(**kwargs)
+    def __init__(self, config, name='decoder', **kwargs) -> None:
+        super(decoder, self).__init__(name=name, **kwargs)
         self.gumbel = tfd.RelaxedOneHotCategorical # Gumbel-Softmax
         self.bernoulli = tfd.Bernoulli # Bernoulli for Reconstruction
         self.tau = config.tau # Temperature
         self.n_class = config.n_class # Number of Classes
         self.n_dist = config.n_dist # Number of Categorical Distributions
+        self.out_dim = config.out_dim
 
         self.decoder_stack = config.stack()
-        self.reconstruct = tfkl.Dense(config.out_dim)
+        self.reconstruct = tfkl.Dense(tfm.reduce_prod(config.out_dim))
 
     def call(self, logits, training=False):
-        q_y = self.gumbel(logits, self.tau.read_value())
+        q_y = self.gumbel(self.tau.read_value(), logits=logits)
         y = q_y.sample()
 
         decoded = self.decoder_stack(y)
+        print('decoded: ', decoded.shape)
         x_logits = self.reconstruct(decoded)
+        print('x_logits: ', x_logits.shape)
+        x_logits = tf.reshape(x_logits, [-1] + list(self.out_dim))
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.mean()
 
         return Decoder_Output(x_mean, y, p_x, q_y)
 
-class head(tfkl.layer):
-    def __init__(self, config, **kwargs) -> None:
-        super(head, self).__init__(name='encoder', **kwargs)
+class head(tfkl.Layer):
+    def __init__(self, config, name='head', **kwargs) -> None:
+        super(head, self).__init__(name=name, **kwargs)
 
         self.intermediate = config.intermediate() # Task Specific
-        self.dense = config.stack()
-        self.output = tfkl.Dense(config.n_class, activation='softmax')
+        self.stack = config.stack()
+        self.clf = tfkl.Dense(config.n_class, activation='softmax')
 
     def call(self, input_tensor, training=False):
         latent = self.intermediate(input_tensor)
         dense = self.classification(latent)
-        return self.output(dense)
+        return self.clf(dense)
 
 
 def init_encoder(config, **kwargs):
@@ -70,7 +75,7 @@ def init_encoder(config, **kwargs):
 
 def init_decoder(config, **kwargs):
     def new_decoder(name='decoder'):
-        return encoder(config, name, **kwargs)
+        return decoder(config, name, **kwargs)
     return new_decoder
 
 def init_head(config, **kwargs):

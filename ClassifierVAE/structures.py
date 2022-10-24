@@ -25,6 +25,7 @@ class Decoder_Config(NamedTuple):
     n_dist : Any 
     stack : Any 
     dense_activation : Any
+    out_dim : Any
     tau : Any 
 
 class Head_Config(NamedTuple):

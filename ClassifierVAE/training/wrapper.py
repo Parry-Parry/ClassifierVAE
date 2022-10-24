@@ -1,3 +1,4 @@
+import logging
 from ClassifierVAE.utils import testing
 import tensorflow as tf
 import numpy as np
@@ -11,7 +12,7 @@ class wrapper():
         self.loss = proc.loss
 
         if proc.temp:
-            self.temp_anneal = proc.temp_anneal
+            self.temp_anneal = proc.temp
         else:
             self.temp_anneal = None
         
@@ -25,7 +26,13 @@ class wrapper():
         self.model = model
 
     def fit(self, train, test, logger):
+
+        log = logging.getLogger(__name__)
+
         for epoch in range(self.epochs):
+
+            log.info(f'Begin Epoch {epoch}...')
+
             for step, (x_batch, y_batch) in enumerate(train): 
                 with tf.GradientTape() as tape:
                     output = self.model(x_batch, training=True)
@@ -43,6 +50,8 @@ class wrapper():
 
             train_acc = self.train_metric.result()
             self.train_metric.reset_states()
+
+            log.info(f'Epoch {epoch} | Train Acc: {train_acc} | Test Acc: {val_acc} | Loss: {loss_value}')
 
             logger.log({'epochs': epoch,
                    'loss': loss_value,
