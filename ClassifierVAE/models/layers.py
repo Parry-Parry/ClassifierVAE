@@ -24,7 +24,7 @@ class encoder(tfkl.Layer):
         logits_y = self.dense_logits(latent)
         p_y = compute_py(logits_y, self.n_class, self.tau.read_value())   
 
-        return Encoder_Output(tf.reshape(logits_y, [-1, self.n_dist, self.n_class, 1]), p_y)
+        return Encoder_Output(logits_y, p_y)
 
 class decoder(tfkl.Layer):
     def __init__(self, config, name='decoder', **kwargs) -> None:
@@ -35,18 +35,18 @@ class decoder(tfkl.Layer):
         self.n_class = config.n_class # Number of Classes
         self.n_dist = config.n_dist # Number of Categorical Distributions
         self.out_dim = config.out_dim
+        self.latent_square = config.latent_square
 
-        self.process = tfkl.Dense(64, activation='relu')
+        self.process = tfkl.Dense(config.latent_square * config.out_dim[-1], activation='relu')
         self.decoder_stack = config.stack()
         self.reconstruct = tfkl.Dense(tfm.reduce_prod(config.out_dim), activation='relu')
 
     def call(self, logits, training=False):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
         y = q_y.sample()
-        processed_logits = self.process(y)
+        processed_logits = tf.reshape(self.process(y), [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
         decoded = self.decoder_stack(processed_logits, training)
-        upscale = self.reconstruct(decoded)
-        x_logits = tf.reshape(upscale, [-1] + list(self.out_dim))
+        x_logits = tf.reshape(self.reconstruct(decoded), [-1] + list(self.out_dim))
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.mean()
