@@ -36,14 +36,15 @@ class decoder(tfkl.Layer):
         self.n_dist = config.n_dist # Number of Categorical Distributions
         self.out_dim = config.out_dim
 
+        self.process = tfkl.Dense(64, activation='relu')
         self.decoder_stack = config.stack()
-        self.reconstruct = tfkl.Dense(tfm.reduce_prod(config.out_dim))
+        self.reconstruct = tfkl.Dense(tfm.reduce_prod(config.out_dim), activation='relu')
 
     def call(self, logits, training=False):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
         y = q_y.sample()
-
-        decoded = self.decoder_stack(y, training)
+        processed_logits = tf.reshape(self.process(y), [-1, 8, 8, 1])
+        decoded = self.decoder_stack(processed_logits, training)
         upscale = self.reconstruct(decoded)
         x_logits = tf.reshape(self.scale(upscale), [-1] + list(self.out_dim))
 
