@@ -63,12 +63,13 @@ Initializes multitask loss with the sum taken over ensemble components
 def init_loss(multihead=False):
     cce = tfk.losses.CategoricalCrossentropy()
     def ensemble_loss(y_true, x_true, output):
-        print(output.gen_y)
-        qp_pairs = [q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) for q_y in output.q_y]
-        KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
+        #qp_pairs = [q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) for q_y in output.q_y]
+        #KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
+
+        KL = tf.reduce_sum([output.p_y.kl_divergence(q_y) for q_y in output.q_y], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
 
         intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=output.y_pred), axis=0, name="Sum of CE over Generated Preds")
-        neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_sum(x.log_prob(x_true), 1), elems=output.p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")
+        neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_mean(tf.reduce_sum(x.log_prob(x_true), 1)), elems=output.p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")
 
         return intermediate + neg_log_likelihood - KL
     
