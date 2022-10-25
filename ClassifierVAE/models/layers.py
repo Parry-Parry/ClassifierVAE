@@ -46,10 +46,11 @@ class decoder(tfkl.Layer):
         y = q_y.sample() 
         processed_logits = tf.reshape(self.process(y), [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
         decoded = self.decoder_stack(processed_logits, training)
-        x_logits = tf.reshape(self.reconstruct(decoded), [-1] + list(self.out_dim))
+        x_logits = self.reconstruct(decoded)
 
         p_x = self.bernoulli(logits=x_logits)
-        x_mean = p_x.mean()
+        x_mean = tf.reshape(p_x.mean(), [-1] + list(self.out_dim))
+
 
         return Decoder_Output(x_mean, y, p_x, q_y)
 

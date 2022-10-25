@@ -36,7 +36,6 @@ class wrapper():
             for step, (x_batch, y_batch) in enumerate(train): 
                 with tf.GradientTape() as tape:
                     output = self.model(x_batch, training=True)
-                    print(output)
                     loss_value = self.loss(y_batch, x_batch, output)
                 grads = tape.gradient(loss_value, self.model.trainable_weights)
                 self.optim.apply_gradients(zip(grads, self.model.trainable_weights))
