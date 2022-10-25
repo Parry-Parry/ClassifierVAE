@@ -52,6 +52,7 @@ Computes the latent fixed prior over the logits of y
 '''
 
 def compute_py(logits_y, n_class, tau): 
+    print(tau)
     logits_py = tf.ones_like(logits_y) * 1./n_class 
     return tfd.RelaxedOneHotCategorical(tau, logits=logits_py)
 
