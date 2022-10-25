@@ -37,6 +37,8 @@ class decoder(tfkl.Layer):
         self.out_dim = config.out_dim
         self.latent_square = config.latent_square
 
+        print(config.latent_square * config.out_dim[-1])
+
         self.process = tfkl.Dense(config.latent_square * config.out_dim[-1], activation='relu')
         self.decoder_stack = config.stack()
         self.reconstruct = tfkl.Dense(tfm.reduce_prod(config.out_dim), activation='relu')
