@@ -51,7 +51,6 @@ class decoder(tfkl.Layer):
         p_x = self.bernoulli(logits=x_logits)
         x_mean = tf.reshape(p_x.mean(), [-1] + list(self.out_dim))
 
-
         return Decoder_Output(x_mean, y, p_x, q_y)
 
 class head(tfkl.Layer):
