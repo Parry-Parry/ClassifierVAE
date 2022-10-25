@@ -20,7 +20,7 @@ class encoder(tfkl.Layer):
         self.dense_logits = tfkl.Dense(config.n_class * config.n_dist)
     
     def call(self, input_tensor, training=False):
-        latent = self.encoder_stack(input_tensor)
+        latent = self.encoder_stack(input_tensor, training)
         logits_y = self.dense_logits(latent)
         p_y = compute_py(logits_y, self.n_class, self.tau.read_value())   
 
@@ -43,11 +43,9 @@ class decoder(tfkl.Layer):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
         y = q_y.sample()
 
-        decoded = self.decoder_stack(y)
-        print('decoded: ', decoded.shape)
-        x_logits = self.reconstruct(decoded)
-        print('x_logits: ', x_logits.shape)
-        x_logits = tf.reshape(x_logits, [-1] + list(self.out_dim))
+        decoded = self.decoder_stack(y, training)
+        upscale = self.reconstruct(decoded)
+        x_logits = tf.reshape(self.scale(upscale), [-1] + list(self.out_dim))
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.mean()
@@ -64,7 +62,7 @@ class head(tfkl.Layer):
 
     def call(self, input_tensor, training=False):
         latent = self.intermediate(input_tensor)
-        dense = self.classification(latent)
+        dense = self.stack(latent)
         return self.clf(dense)
 
 
