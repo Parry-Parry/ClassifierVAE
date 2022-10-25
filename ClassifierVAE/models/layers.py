@@ -44,10 +44,9 @@ class decoder(tfkl.Layer):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
         y = q_y.sample()
         processed_logits = self.process(y)
-        print(processed_logits.shape)
         decoded = self.decoder_stack(processed_logits, training)
         upscale = self.reconstruct(decoded)
-        x_logits = tf.reshape(self.scale(upscale), [-1] + list(self.out_dim))
+        x_logits = tf.reshape(upscale, [-1] + list(self.out_dim))
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.mean()

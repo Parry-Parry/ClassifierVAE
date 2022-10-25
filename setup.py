@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name='ClassifierVAE',
     packages=find_packages(),
-    version='0.2.0',
+    version='0.2.1',
     description='Ensemble Models for Variational Aggregate Inference',
     author='Andrew Parry',
     license='MIT',
