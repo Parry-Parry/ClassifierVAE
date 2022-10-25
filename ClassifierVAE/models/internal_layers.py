@@ -15,16 +15,16 @@ returns:
     tfk.Sequential -> Simple sequential keras structure
 '''
 
-def init_convnet(stack, kernel_size=5, strides=(2, 2), activation='relu', dropout_rate=None, flatten=False):
+def init_convnet(stack, kernel_size=5, strides=(2, 2), activation='relu', dropout_rate=None, pooling=False, flatten=False):
     def convnet():
        
         layers = []
         for size in stack:
             layers.append(tfkl.Conv2D(size, kernel_size=kernel_size, strides=strides, activation=activation))
             if dropout_rate: layers.append(tfkl.Dropout(dropout_rate))
-            layers.append(tfkl.MaxPool2D(pool_size=(2, 2)))
-        if dropout_rate: layers = layers[:-2]
-        else: layers = layers[:-1]
+            if pooling: layers.append(tfkl.MaxPool2D(pool_size=(2, 2)))
+        if dropout_rate and pooling: layers = layers[:-2]
+        elif dropout_rate: layers = layers[:-1]
         if flatten: layers = layers + [tfkl.Flatten()]
         return tfk.Sequential(layers)
     return convnet 
