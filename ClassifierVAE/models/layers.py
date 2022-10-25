@@ -37,16 +37,14 @@ class decoder(tfkl.Layer):
         self.out_dim = config.out_dim
         self.latent_square = config.latent_square
 
-        self.process = tfkl.Dense(config.latent_square * config.out_dim[-1], activation='relu')
+        self.process = tfkl.Dense(config.latent_square ** 2 * config.out_dim[-1], activation='relu')
         self.decoder_stack = config.stack()
         self.reconstruct = tfkl.Dense(tfm.reduce_prod(config.out_dim), activation='relu')
 
     def call(self, logits, training=False):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
-        y = q_y.sample()
-        x = self.process(y) 
-        print(x.shape)
-        processed_logits = tf.reshape(x, [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
+        y = q_y.sample() 
+        processed_logits = tf.reshape(self.process(y), [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
         decoded = self.decoder_stack(processed_logits, training)
         x_logits = tf.reshape(self.reconstruct(decoded), [-1] + list(self.out_dim))
 
