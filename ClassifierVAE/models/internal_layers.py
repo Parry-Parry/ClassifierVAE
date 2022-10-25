@@ -32,12 +32,10 @@ def init_convnet(stack, kernel_size=5, strides=(2, 2), activation='relu', dropou
 def init_convtransposenet(stack, kernel_size=5, strides=(2, 2), activation='relu', dropout_rate=None, flatten=False):
     def convtransposenet():
         layers = []
-        for size in stack:
-            layers.append(tfkl.Conv2D(size, kernel_size=kernel_size, strides=strides, activation=activation))
+        for size in stack[:-1]:
+            layers.append(tfkl.Conv2DTranspose(size, kernel_size=kernel_size, strides=strides, activation=activation))
             if dropout_rate: layers.append(tfkl.Dropout(dropout_rate))
-            layers.append(tfkl.BatchNormalization())
-        if dropout_rate: layers = layers[:-2]
-        else: layers = layers[:-1]
+        layers.append(tfkl.Conv2DTranspose(size, kernel_size=kernel_size, strides=strides, activation=None))
         if flatten: layers = layers + [tfkl.Flatten()]
         return tfk.Sequential(layers)
     return convtransposenet
