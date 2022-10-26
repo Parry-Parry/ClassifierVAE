@@ -35,6 +35,10 @@ class GumbelSoftmax(tfd.TransformedDistribution):
     answer = super(GumbelSoftmax, self)._log_prob(x)
     return tf.where(tf.equal(x, 0.0), tf.constant(-np.inf, dtype=answer.dtype), answer)
 
+def LogProb(dist, x):
+    return tf.where(tf.equal(x, 0.0), tf.constant(-np.inf, dtype=dist.log_prob(x).dtype), dist.log_prob(x))
+
+
 '''
 Creates a function which recieves a [num_distribution x n_class] tensor of probabilities, then takes either the argmax or softmax (normalized) of that sum
 '''
@@ -83,8 +87,8 @@ Initializes multitask loss with the sum taken over ensemble components
 def init_loss(multihead=False):
     cce = tfk.losses.CategoricalCrossentropy()
     def ensemble_loss(y_true, x_true, output):
-        print(output.q_y[0].log_prob(output.gen_y).shape, output.p_y.log_prob(output.gen_y))
-        qp_pairs = [q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) for q_y in output.q_y]
+        #qp_pairs = [q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) for q_y in output.q_y]
+        qp_pairs = [LogProb(q_y, output.gen_y) - LogProb(output.p_y, output.gen_y) for q_y in output.q_y]
         KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
 
         intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=output.y_pred), axis=0, name="Sum of CE over Generated Preds")
