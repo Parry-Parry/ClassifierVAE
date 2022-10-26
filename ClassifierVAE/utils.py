@@ -35,9 +35,15 @@ class GumbelSoftmax(tfd.TransformedDistribution):
     answer = super(GumbelSoftmax, self)._log_prob(x)
     return tf.where(tf.equal(x, 0.0), tf.constant(-np.inf, dtype=answer.dtype), answer)
 
-def LogProb(dist, x):
-    probs = dist.log_prob(x)
-    return tf.where(tfm.is_nan(probs), tf.constant(-np.inf, dtype=dist.log_prob(x).dtype), dist.log_prob(x))
+def nan_remove(x):
+    return tf.where(tfm.is_nan(x), tf.constant(-np.inf, dtype=x.dtype), x)
+
+def log_prob(dist, x):
+    return nan_remove(dist.log_prob(x))
+
+def prob_diff(d1, d2, x):
+    diff = log_prob(d1, x) - log_prob(d2, x)
+    return nan_remove(diff)
 
 '''
 Creates a function which recieves a [num_distribution x n_class] tensor of probabilities, then takes either the argmax or softmax (normalized) of that sum
@@ -87,10 +93,9 @@ Initializes multitask loss with the sum taken over ensemble components
 def init_loss(multihead=False):
     cce = tfk.losses.CategoricalCrossentropy()
     def ensemble_loss(y_true, x_true, output):
-        print(LogProb(output.p_y, output.gen_y))
-        qp_pairs = [LogProb(q_y, output.gen_y) - LogProb(output.p_y, output.gen_y) for q_y in output.q_y]
+        qp_pairs = [prob_diff(q_y, output.p_y, output.gen_y) for q_y in output.q_y]
         
-        KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
+        KL = nan_remove(tf.reduce_sum([nan_remove(tf.reduce_sum(qp, 1)) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions"))
 
         intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=output.y_pred), axis=0, name="Sum of CE over Generated Preds")
         neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_mean(tf.reduce_sum(x.log_prob(x_true), 1)), elems=output.p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")
