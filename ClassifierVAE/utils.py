@@ -36,7 +36,7 @@ class GumbelSoftmax(tfd.TransformedDistribution):
     return tf.where(tf.equal(x, 0.0), tf.constant(-np.inf, dtype=answer.dtype), answer)
 
 def LogProb(dist, x):
-    print(x)
+    print(x.shape, dist.log_prob(x).shape)
     return tf.where(tf.equal(x, 0.0), tf.constant(-np.inf, dtype=dist.log_prob(x).dtype), dist.log_prob(x))
 
 
