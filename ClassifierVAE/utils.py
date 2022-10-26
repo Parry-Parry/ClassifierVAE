@@ -16,6 +16,23 @@ from sklearn.cluster import KMeans
 tfd = tfp.distributions
 
 '''
+Custom distribution to prevent NaN values
+
+Inspiration from tfp LogNormal log_prob implementation
+'''
+
+class GumbelSoftmax(tfd.TransformedDistribution):
+
+  def __init__(self, tau, logits):
+    super(GumbelSoftmax, self).__init__(
+      distribution=tfd.RelaxedOneHotCategorical(tau, logits=logits)
+    )
+
+  def _log_prob(self, x):
+    answer = super(GumbelSoftmax, self)._log_prob(x)
+    return tf.where(tf.equal(x, 0.0), tf.constant(-np.inf, dtype=answer.dtype), answer)
+
+'''
 Creates a function which recieves a [num_distribution x n_class] tensor of probabilities, then takes either the argmax or softmax (normalized) of that sum
 '''
 
@@ -52,9 +69,8 @@ Computes the latent fixed prior over the logits of y
 '''
 
 def compute_py(logits_y, n_class, tau): 
-    print(tau)
     logits_py = tf.ones_like(logits_y) * 1./n_class 
-    return tfd.RelaxedOneHotCategorical(tau, logits=logits_py)
+    return GumbelSoftmax(tau, logits=logits_py)
 
 '''
 Initializes multitask loss with the sum taken over ensemble components
@@ -63,10 +79,9 @@ Initializes multitask loss with the sum taken over ensemble components
 def init_loss(multihead=False):
     cce = tfk.losses.CategoricalCrossentropy()
     def ensemble_loss(y_true, x_true, output):
-        #qp_pairs = [q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) for q_y in output.q_y]
-        #KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
 
-        KL = tf.reduce_sum([output.p_y.kl_divergence(q_y) for q_y in output.q_y], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
+        qp_pairs = [q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) for q_y in output.q_y]
+        KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
 
         intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=output.y_pred), axis=0, name="Sum of CE over Generated Preds")
         neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_mean(tf.reduce_sum(x.log_prob(x_true), 1)), elems=output.p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")

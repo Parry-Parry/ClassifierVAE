@@ -1,5 +1,5 @@
 import tensorflow as tf
-from ClassifierVAE.utils import compute_py 
+from ClassifierVAE.utils import compute_py, GumbelSoftmax
 from ClassifierVAE.structures import Decoder_Output, Encoder_Output
 import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
@@ -29,7 +29,7 @@ class encoder(tfkl.Layer):
 class decoder(tfkl.Layer):
     def __init__(self, config, name='decoder', **kwargs) -> None:
         super(decoder, self).__init__(name=name, **kwargs)
-        self.gumbel = tfd.RelaxedOneHotCategorical # Gumbel-Softmax
+        self.gumbel = GumbelSoftmax # Gumbel-Softmax
         self.bernoulli = tfd.Bernoulli # Bernoulli for Reconstruction
         self.tau = config.tau # Temperature
         self.n_class = config.n_class # Number of Classes
