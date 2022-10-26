@@ -21,7 +21,7 @@ class encoder(tfkl.Layer):
     
     def call(self, input_tensor, training=False):
         latent = self.encoder_stack(input_tensor, training)
-        logits_y = self.dense_logits(latent)
+        logits_y = tf.reshape(self.dense_logits(latent), [-1, self.n_dist, self.n_class])
         p_y = compute_py(logits_y, self.n_class, self.tau.read_value())   
 
         return Encoder_Output(logits_y, p_y)
@@ -29,8 +29,7 @@ class encoder(tfkl.Layer):
 class decoder(tfkl.Layer):
     def __init__(self, config, name='decoder', **kwargs) -> None:
         super(decoder, self).__init__(name=name, **kwargs)
-        #self.gumbel = GumbelSoftmax # Gumbel-Softmax
-        self.gumbel = tfd.RelaxedOneHotCategorical
+        self.gumbel = tfd.RelaxedOneHotCategorical # Gumbel-Softmax
         self.bernoulli = tfd.Bernoulli # Bernoulli for Reconstruction
         self.tau = config.tau # Temperature
         self.n_class = config.n_class # Number of Classes
@@ -44,13 +43,13 @@ class decoder(tfkl.Layer):
 
     def call(self, logits, training=False):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
-        y = q_y.sample() 
+        y = tf.reshape(q_y.sample(), [-1, self.n_class * self.n_dist])
         processed_logits = tf.reshape(self.process(y), [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
         decoded = self.decoder_stack(processed_logits, training)
         x_logits = self.reconstruct(decoded)
 
         p_x = self.bernoulli(logits=x_logits)
-        x_mean = tf.reshape(p_x.mean(), [-1] + list(self.out_dim))
+        x_mean = p_x.mean()
 
         return Decoder_Output(x_mean, y, p_x, q_y)
 

@@ -18,6 +18,7 @@ class multihead_gumbel(tfk.Model):
         self.decoders = [config.decoder(name=f'decoder_{i}') for i in range(config.num_heads)]
         self.heads = [config.head(name=f'head_{i}') for i in range(config.num_heads)]
 
+        self.out_dim = config.out_dim
         self.n_class = config.n_class
 
     def call(self, input_tensor, training=False):
@@ -27,7 +28,7 @@ class multihead_gumbel(tfk.Model):
             encoder_output = self.encoder(x, training)
             decoder_outputs = [decoder(encoder_output.logits_y, training) for decoder in self.decoders]
 
-            samples = [output.recons for output in decoder_outputs]
+            samples = [tf.reshape(output.recons, [-1, self.out_dim]) for output in decoder_outputs]
             preds = [head(sample, training) for head, sample in zip(self.heads, samples)]
             
             p_x = [output.p_x for output in decoder_outputs]
