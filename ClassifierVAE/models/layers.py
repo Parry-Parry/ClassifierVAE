@@ -56,12 +56,13 @@ class decoder(tfkl.Layer):
 class head(tfkl.Layer):
     def __init__(self, config, name='head', **kwargs) -> None:
         super(head, self).__init__(name=name, **kwargs)
-
+        self.in_dim = config.in_dim
         self.intermediate = config.intermediate() # Task Specific
         self.stack = config.stack()
         self.clf = tfkl.Dense(config.n_class, activation='softmax')
 
     def call(self, input_tensor, training=False):
+        x = tf.reshape(input_tensor, [-1,]+ list(self.in_dim))
         latent = self.intermediate(input_tensor)
         dense = self.stack(latent)
         return self.clf(dense)

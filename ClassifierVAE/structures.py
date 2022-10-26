@@ -26,7 +26,7 @@ class Decoder_Config(NamedTuple):
     n_dist : Any 
     stack : Any 
     dense_activation : Any
-    latent_square : Any # Size of reconstruction
+    latent_square : Any # Size of reshaped sampled logits
     out_dim : Any
     tau : Any 
 
@@ -35,6 +35,7 @@ class Head_Config(NamedTuple):
     intermediate : Any # Task-specific layers
     stack : Any 
     dense_activation : Any
+    in_dim : Any
 
 class Wrapper_Config(NamedTuple):
     model : Any 
