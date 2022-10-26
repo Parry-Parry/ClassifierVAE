@@ -82,7 +82,7 @@ Initializes multitask loss with the sum taken over ensemble components
 def init_loss(multihead=False):
     cce = tfk.losses.CategoricalCrossentropy()
     def ensemble_loss(y_true, x_true, output):
-
+        print(output.q_y[0].log_prob(output.gen_y).shape, output.p_y.log_prob(output.gen_y))
         qp_pairs = [q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) for q_y in output.q_y]
         KL = tf.reduce_sum([tf.reduce_sum(qp, 1) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions")
 
