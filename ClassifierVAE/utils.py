@@ -14,6 +14,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 tfd = tfp.distributions
+tfb = tfp.bijectors
 
 '''
 Custom distribution to prevent NaN values
@@ -25,7 +26,9 @@ class GumbelSoftmax(tfd.TransformedDistribution):
 
   def __init__(self, tau, logits):
     super(GumbelSoftmax, self).__init__(
-      distribution=tfd.RelaxedOneHotCategorical(tau, logits=logits)
+      distribution=tfd.RelaxedOneHotCategorical(tau, logits=logits),
+      bijector=tfb.Exp(),
+      name='Gumbel Softmax'
     )
 
   def _log_prob(self, x):
