@@ -95,7 +95,7 @@ def init_loss(multihead=False):
     def ensemble_loss(y_true, x_true, output):
         qp_pairs = [prob_diff(q_y, output.p_y, output.gen_y) for q_y in output.q_y]
         
-        KL = nan_remove(tf.reduce_sum([nan_remove(tf.reduce_sum(qp, 1)) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions"))
+        KL = nan_remove(tf.reduce_sum([nan_remove(tf.reduce_sum(qp)) for qp in qp_pairs], axis=0, name="Sum of KL over Prior Distribution and Learned Distributions"))
 
         intermediate = tfm.reduce_sum(tf.map_fn(lambda x : cce(y_true, x), elems=output.y_pred), axis=0, name="Sum of CE over Generated Preds")
         neg_log_likelihood = tf.reduce_sum(tf.map_fn(lambda x : tf.reduce_mean(tf.reduce_sum(x.log_prob(x_true), 1)), elems=output.p_x), axis=0, name="Sum of Neg Log Likelihood over each distribution")
