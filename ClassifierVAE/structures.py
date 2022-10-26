@@ -11,6 +11,7 @@ class Model_Config(NamedTuple):
     head : Any # Classifier function
     input_layer : Any # Task specific input spec
     n_class : Any # Number of Classes
+    out_dim : Any # Size of Image
     hard : Any # argmax (T) or softmax (F)
 
 class Encoder_Config(NamedTuple):
