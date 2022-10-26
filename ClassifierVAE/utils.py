@@ -73,7 +73,8 @@ Computes the latent fixed prior over the logits of y
 
 def compute_py(logits_y, n_class, tau): 
     logits_py = tf.ones_like(logits_y) * 1./n_class 
-    return GumbelSoftmax(tau, logits=logits_py)
+    #return GumbelSoftmax(tau, logits=logits_py)
+    return tfd.RelaxedOneHotCategorical(tau, logits=logits_py)
 
 '''
 Initializes multitask loss with the sum taken over ensemble components
