@@ -94,9 +94,9 @@ def init_loss(multihead=False):
     def ensemble_loss(y_true, x_true, output):
         qp_pairs = [prob_diff(q_y, output.p_y, output.gen_y) for q_y in output.q_y]
         KL = [nan_remove(tfm.reduce_mean(qp)) for qp in qp_pairs]
-        neg_ll = [tf.reduce_mean(tf.reduce_sum(x.log_prob(tf.reshape(x_true, [x.true.shape[0], -1])), 1)) for x in output.p_x]
+        neg_ll = [tf.reduce_mean(tf.reduce_sum(x.log_prob(tf.reshape(x_true, [x_true.shape[0], -1])), 1)) for x in output.p_x]
         elbo = tf.reduce_sum([tf.reduce_mean(ll - kl) for ll, kl in zip(neg_ll, KL)])
-        
+
         intermediate = tfm.reduce_sum([cce(y_true, x) for x in output.y_pred], axis=0, name='Sum of CCE over each head predictions')
         
         return intermediate - elbo
