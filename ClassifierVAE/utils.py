@@ -27,7 +27,7 @@ class GumbelSoftmax(tfd.TransformedDistribution):
   def __init__(self, tau, logits):
     super(GumbelSoftmax, self).__init__(
       distribution=tfd.RelaxedOneHotCategorical(tau, logits=logits),
-      bijector=tfb.Exp(),
+      bijector=tfb.SoftmaxCentered(),
       name='Gumbel Softmax'
     )
 
