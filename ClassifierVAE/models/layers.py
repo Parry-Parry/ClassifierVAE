@@ -29,7 +29,8 @@ class encoder(tfkl.Layer):
 class decoder(tfkl.Layer):
     def __init__(self, config, name='decoder', **kwargs) -> None:
         super(decoder, self).__init__(name=name, **kwargs)
-        self.gumbel = GumbelSoftmax # Gumbel-Softmax
+        #self.gumbel = GumbelSoftmax # Gumbel-Softmax
+        self.gumbel = tfd.RelaxedOneHotCategorical
         self.bernoulli = tfd.Bernoulli # Bernoulli for Reconstruction
         self.tau = config.tau # Temperature
         self.n_class = config.n_class # Number of Classes
