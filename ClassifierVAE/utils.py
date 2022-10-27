@@ -17,32 +17,14 @@ tfd = tfp.distributions
 tfb = tfp.bijectors
 
 '''
-Custom distribution to prevent NaN values
-
-Inspiration from tfp LogNormal log_prob implementation
+Function to prevent NaN values
 '''
-
-class GumbelSoftmax(tfd.TransformedDistribution):
-
-  def __init__(self, tau, logits):
-    super(GumbelSoftmax, self).__init__(
-      distribution=tfd.RelaxedOneHotCategorical(tau, logits=logits),
-      bijector=tfb.SoftmaxCentered(),
-      name='Gumbel Softmax'
-    )
-
-  def _log_prob(self, x):
-    answer = super(GumbelSoftmax, self)._log_prob(x)
-    return tf.where(tf.equal(x, 0.0), tf.constant(-np.inf, dtype=answer.dtype), answer)
 
 def nan_remove(x):
     return tf.where(tfm.is_nan(x), tf.constant(-np.inf, dtype=x.dtype), x)
 
-def log_prob(dist, x):
-    return nan_remove(dist.log_prob(x))
-
 def prob_diff(d1, d2, x):
-    diff = log_prob(d1, x) - log_prob(d2, x)
+    diff = nan_remove(d1.log_prob(x)) - nan_remove(d2.log_prob(x))
     return nan_remove(diff)
 
 '''
@@ -102,13 +84,13 @@ def init_loss(multihead=False):
         return intermediate - elbo
     
     def sequential_loss(y_true, x_true, output):
-        qp = output.q_y.log_prob(output.gen_y) - output.p_y.log_prob(output.gen_y) 
-        KL = tf.reduce_sum(qp, 1)
+        KL = tfm.reduce_mean(prob_diff(output.q_y, output.p_y, output.gen_y))
+        neg_log_likelihood = tfm.reduce_sum(output.p_x.log_prob(tf.reshape(x_true, [x_true.shape[0], -1])), 1)
+        elbo = tfm.reduce_mean(neg_log_likelihood - KL)
 
-        intermediate = cce(y_true, output.y_pred)
-        neg_log_likelihood = tf.reduce_sum(output.p_x.log_prob(x_true), 1)
+        intermediate = cce(y_true, output.y_pred) 
 
-        return intermediate + neg_log_likelihood - KL
+        return intermediate - elbo
     
     if multihead: return ensemble_loss
     return sequential_loss
@@ -135,7 +117,7 @@ def testing(test_set, model, n_classes=10):
     return results
 
 '''
-Retrieves and normalizes image datasets
+Retrieve and normalize image datasets
 '''
 
 def retrieve_dataset(name=None, path=None):
