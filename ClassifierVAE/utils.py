@@ -110,7 +110,7 @@ def init_loss(multihead=False):
 def init_loss(multihead, n_dist, n_class):
     cce = tfk.losses.CategoricalCrossentropy()
     bce = tfk.losses.BinaryCrossentropy()
-    softmax = tf.activations.softmax
+    softmax = tfk.activations.softmax
 
     def ensemble_loss(y_true, x_true, output):
         q_y = softmax(tf.reshape(output.gen_y, [-1, n_dist, n_class]))
