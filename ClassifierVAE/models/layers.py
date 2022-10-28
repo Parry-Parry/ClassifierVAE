@@ -1,5 +1,5 @@
 import tensorflow as tf
-from ClassifierVAE.utils import compute_py, GumbelSoftmax
+from ClassifierVAE.utils import compute_py
 from ClassifierVAE.structures import Decoder_Output, Encoder_Output
 import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
@@ -62,7 +62,7 @@ class head(tfkl.Layer):
         self.clf = tfkl.Dense(config.n_class, activation='softmax')
 
     def call(self, input_tensor, training=False):
-        x = tf.reshape(input_tensor, [-1,]+ list(self.in_dim))
+        x = tf.reshape(input_tensor, [-1,] + list(self.in_dim))
         latent = self.intermediate(x)
         dense = self.stack(latent)
         return self.clf(dense)
