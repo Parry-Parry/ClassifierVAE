@@ -45,12 +45,12 @@ class decoder(tfkl.Layer):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
         y = tf.reshape(q_y.sample(), [-1, self.n_class * self.n_dist])
         processed_logits = tf.reshape(self.process(y), [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
-        print(processed_logits.shape)
         decoded = self.decoder_stack(processed_logits, training)
         x_logits = self.reconstruct(decoded)
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.mean()
+        print('Completed Decode')
 
         return Decoder_Output(x_mean, y, p_x, q_y)
 
@@ -63,7 +63,9 @@ class head(tfkl.Layer):
         self.clf = tfkl.Dense(config.n_class, activation='softmax')
 
     def call(self, input_tensor, training=False):
+        print('Got to classification')
         x = tf.reshape(input_tensor, [-1,] + list(self.in_dim))
+        print('Completed Reshape')
         latent = self.intermediate(x)
         dense = self.stack(latent)
         return self.clf(dense)
