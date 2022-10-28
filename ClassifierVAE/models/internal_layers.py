@@ -17,7 +17,6 @@ returns:
 
 def init_convnet(stack, kernel_size=5, strides=(2, 2), activation='relu', dropout_rate=None, pooling=False, flatten=False):
     def convnet():
-       
         layers = []
         for size in stack:
             layers.append(tfkl.Conv2D(size, kernel_size=kernel_size, strides=strides, activation=activation))
