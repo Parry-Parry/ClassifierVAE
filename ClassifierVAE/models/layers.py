@@ -64,9 +64,7 @@ class head(tfkl.Layer):
     def call(self, input_tensor, training=False):
         x = tf.reshape(input_tensor, [-1,] + list(self.in_dim))
         latent = self.intermediate(x)
-        print('latent from conv got')
         dense = self.stack(latent)
-        print('dense layer complete')
         return self.clf(dense)
 
 
