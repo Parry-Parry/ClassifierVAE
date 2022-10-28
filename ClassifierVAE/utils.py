@@ -17,6 +17,18 @@ tfd = tfp.distributions
 tfb = tfp.bijectors
 
 '''
+Gumbel Softmax (No tfd)
+'''
+def init_sample_func(n_dist, n_class):
+    def sample(tau, logits_y):
+        U = tf.random_uniform(logits_y.shape, 0, maxval=1)
+        y = logits_y - tfm.log(-tfm.log(U + 1e-20) + 1e-20) # logits + gumbel noise
+        y = tf.activations.softmax(tf.reshape(y, [-1, n_dist, n_class]) / tau)
+        y = tf.reshape(y, [-1, n_dist*n_class])
+        return y
+    return sample
+
+'''
 Function to prevent NaN values
 '''
 
@@ -69,15 +81,14 @@ def compute_py(logits_y, n_class, tau):
 
 '''
 Initializes multitask loss with the sum taken over ensemble components
-'''
+
 
 def init_loss(multihead=False):
     cce = tfk.losses.CategoricalCrossentropy()
     def ensemble_loss(y_true, x_true, output):
         qp_pairs = [prob_diff(q_y, output.p_y, output.gen_y) for q_y in output.q_y]
         KL = [nan_remove(tfm.reduce_mean(qp)) for qp in qp_pairs]
-        neg_ll = [tf.reduce_mean(tf.reduce_sum(x.log_prob(tf.reshape(x_true, [x_true.shape[0], -1])), 1)) for x in output.p_x]
-        print(neg_ll)
+        neg_ll = [tf.reduce_mean(tf.reduce_sum(-x.log_prob(tf.reshape(x_true, [x_true.shape[0], -1])), 1)) for x in output.p_x]
         elbo = tf.reduce_sum([tf.reduce_mean(ll - kl) for ll, kl in zip(neg_ll, KL)])
 
         intermediate = tfm.reduce_sum([cce(y_true, x) for x in output.y_pred], axis=0, name='Sum of CCE over each head predictions')
@@ -95,6 +106,35 @@ def init_loss(multihead=False):
     
     if multihead: return ensemble_loss
     return sequential_loss
+'''
+def init_loss(multihead, n_dist, n_class):
+    cce = tfk.losses.CategoricalCrossentropy()
+    bce = tfk.losses.BinaryCrossentropy()
+    softmax = tf.activations.softmax
+
+    def ensemble_loss(y_true, x_true, output):
+        q_y = softmax(tf.reshape(output.gen_y, [-1, n_dist, n_class]))
+        log_q_y = tf.log(q_y + 1e-20)
+        kl_tmp = q_y * (log_q_y - tf.log(1.0/n_class))
+        KL = tf.reduce_sum(kl_tmp, axis=(1, 2))
+        elbo = tf.reduce_sum([tfm.reduce_prod(x_true[1:]) * bce(x_true, logits) for logits in output.x_logits]) - KL 
+
+        intermediate = tf.reduce_sum([cce(y_true, x) for x in output.y_pred], axis=0, name='Sum of CCE over each head predictions')
+        
+        return intermediate + elbo
+    
+    def sequential_loss(y_true, x_true, output):
+        KL = tfm.reduce_mean(prob_diff(output.q_y, output.p_y, output.gen_y))
+        neg_log_likelihood = tfm.reduce_sum(output.p_x.log_prob(tf.reshape(x_true, [x_true.shape[0], -1])), 1)
+        elbo = tfm.reduce_mean(neg_log_likelihood - KL)
+
+        intermediate = cce(y_true, output.y_pred) 
+
+        return intermediate - elbo
+    
+    if multihead: return ensemble_loss
+    return sequential_loss
+
 
 '''
 Runs tests on standard metrics

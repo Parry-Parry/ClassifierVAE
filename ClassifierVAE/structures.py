@@ -51,17 +51,26 @@ class Encoder_Output(NamedTuple):
 
 class Decoder_Output(NamedTuple):
     recons : Any # Reconstruced x
+    x_logits : Any 
+    gen_y : Any # Generated Logits
+
+class Model_Output(NamedTuple):
+    y_pred : Any # Classifer Output
+    x_logits : Any # Reconstructed Distribition
+    gen_y : Any # Encoder Output
+'''
+class Decoder_Output(NamedTuple):
+    recons : Any # Reconstruced x
     gen_y : Any # Generated Logits
     p_x : Any # Distribution over x
     q_y : Any # y Prior
-
 class Model_Output(NamedTuple):
     y_pred : Any # Classifer Output
     p_x : Any # Reconstructed Distribition
     p_y : Any # Fixed Prior
     q_y : Any # Gumbel Prior
     gen_y : Any # Encoder Output
-
+'''
 class Test_Results(NamedTuple):
     acc: Any
     f1: Any 

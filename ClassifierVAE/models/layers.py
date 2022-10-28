@@ -1,5 +1,5 @@
 import tensorflow as tf
-from ClassifierVAE.utils import compute_py
+from ClassifierVAE.utils import compute_py, init_sample_func
 from ClassifierVAE.structures import Decoder_Output, Encoder_Output
 import tensorflow.keras as tfk 
 import tensorflow_probability as tfp 
@@ -29,7 +29,7 @@ class encoder(tfkl.Layer):
 class decoder(tfkl.Layer):
     def __init__(self, config, name='decoder', **kwargs) -> None:
         super(decoder, self).__init__(name=name, **kwargs)
-        self.gumbel = tfd.RelaxedOneHotCategorical # Gumbel-Softmax
+        self.gumbel = init_sample_func(config.n_dist, config.n_class) # Gumbel-Softmax
         self.bernoulli = tfd.Bernoulli # Bernoulli for Reconstruction
         self.tau = config.tau # Temperature
         self.n_class = config.n_class # Number of Classes
@@ -42,8 +42,7 @@ class decoder(tfkl.Layer):
         self.reconstruct = tfkl.Dense(tfm.reduce_prod(config.out_dim), activation='relu')
 
     def call(self, logits, training=False):
-        q_y = self.gumbel(self.tau.read_value(), logits=logits)
-        y = tf.reshape(q_y.sample(), [-1, self.n_class * self.n_dist])
+        y = self.gumbel(self.tau.read_value(), logits)
         processed_logits = tf.reshape(self.process(y), [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
         decoded = self.decoder_stack(processed_logits, training)
         x_logits = self.reconstruct(decoded)
@@ -51,7 +50,7 @@ class decoder(tfkl.Layer):
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.mean()
 
-        return Decoder_Output(x_mean, y, p_x, q_y)
+        return Decoder_Output(x_mean, x_logits, y)
 
 class head(tfkl.Layer):
     def __init__(self, config, name='head', **kwargs) -> None:
