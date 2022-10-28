@@ -50,7 +50,6 @@ class decoder(tfkl.Layer):
 
         p_x = self.bernoulli(logits=x_logits)
         x_mean = p_x.mean()
-        print('Completed Decode')
 
         return Decoder_Output(x_mean, y, p_x, q_y)
 
@@ -63,11 +62,11 @@ class head(tfkl.Layer):
         self.clf = tfkl.Dense(config.n_class, activation='softmax')
 
     def call(self, input_tensor, training=False):
-        print('Got to classification')
         x = tf.reshape(input_tensor, [-1,] + list(self.in_dim))
-        print('Completed Reshape')
         latent = self.intermediate(x)
+        print('latent from conv got')
         dense = self.stack(latent)
+        print('dense layer complete')
         return self.clf(dense)
 
 
