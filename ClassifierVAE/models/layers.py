@@ -45,6 +45,7 @@ class decoder(tfkl.Layer):
         q_y = self.gumbel(self.tau.read_value(), logits=logits)
         y = tf.reshape(q_y.sample(), [-1, self.n_class * self.n_dist])
         processed_logits = tf.reshape(self.process(y), [-1, self.latent_square, self.latent_square, self.out_dim[-1]])
+        print(processed_logits.shape)
         decoded = self.decoder_stack(processed_logits, training)
         x_logits = self.reconstruct(decoded)
 
