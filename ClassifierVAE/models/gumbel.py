@@ -31,7 +31,7 @@ class multihead_gumbel(tfk.Model):
             preds = [head(sample, training) for head, sample in zip(self.heads, samples)]
             x_logits = [output.x_logits for output in decoder_outputs]
 
-            return Model_Output(preds, x_logits, encoder_output.gen_y)
+            return Model_Output(preds, x_logits, encoder_output.logits_y)
             
         preds = [head(x, training) for head in self.heads]
 
