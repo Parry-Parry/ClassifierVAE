@@ -21,9 +21,9 @@ Gumbel Softmax (No tfd)
 '''
 def init_sample_func(n_dist, n_class):
     def sample(tau, logits_y):
-        U = tf.random_uniform(logits_y.shape, 0, maxval=1)
+        U = tf.random.uniform(logits_y.shape, 0, maxval=1)
         y = logits_y - tfm.log(-tfm.log(U + 1e-20) + 1e-20) # logits + gumbel noise
-        y = tf.activations.softmax(tf.reshape(y, [-1, n_dist, n_class]) / tau)
+        y = tfk.activations.softmax(tf.reshape(y, [-1, n_dist, n_class]) / tau)
         y = tf.reshape(y, [-1, n_dist*n_class])
         return y
     return sample
