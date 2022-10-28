@@ -1,5 +1,5 @@
 import logging
-from ClassifierVAE.utils import testing
+from ClassifierVAE.utils import testing, init_max
 import tensorflow as tf
 import numpy as np
 
@@ -18,6 +18,7 @@ class wrapper():
         
         self.train_metric = proc.acc_metric() 
         self.val_metric = proc.acc_metric()
+        self.maxi = init_max(False)
     
     def get_model(self):
         return self.model 
@@ -37,9 +38,12 @@ class wrapper():
                 with tf.GradientTape() as tape:
                     output = self.model(x_batch, training=True)
                     loss_value = self.loss(y_batch, x_batch, output)
+                    print('loss value recieved')
                 grads = tape.gradient(loss_value, self.model.trainable_weights)
+                print('grads computed')
                 self.optim.apply_gradients(zip(grads, self.model.trainable_weights))
-            self.train_metric.update_state(y_batch, None)
+                print('grads applied')
+                self.train_metric.update_state(y_batch, self.maxi(output.y_pred))
         
             for x_batch, y_batch in test:
                 test_pred = self.model(x_batch, training=False)
