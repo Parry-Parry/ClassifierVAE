@@ -129,7 +129,7 @@ def init_loss(multihead, n_dist, n_class):
         elbo = tfm.reduce_mean(neg_log_likelihood - KL)
 
         intermediate = cce(y_true, output.y_pred) 
-
+        print(intermediate - elbo)
         return intermediate - elbo
     
     if multihead: return ensemble_loss
