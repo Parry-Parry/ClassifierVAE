@@ -120,8 +120,8 @@ def init_loss(multihead, n_dist, n_class):
         elbo = tf.reduce_sum([tfm.reduce_prod(x_true[1:]) * bce(tf.reshape(x_true, [x_true.shape[0], -1]), logits) for logits in output.x_logits]) - KL 
 
         intermediate = tf.reduce_sum([cce(y_true, x) for x in output.y_pred], axis=0, name='Sum of CCE over each head predictions')
-        
-        return intermediate + elbo
+        print(intermediate - elbo)
+        return intermediate - elbo
     
     def sequential_loss(y_true, x_true, output):
         KL = tfm.reduce_mean(prob_diff(output.q_y, output.p_y, output.gen_y))
@@ -129,7 +129,6 @@ def init_loss(multihead, n_dist, n_class):
         elbo = tfm.reduce_mean(neg_log_likelihood - KL)
 
         intermediate = cce(y_true, output.y_pred) 
-        print(intermediate - elbo)
         return intermediate - elbo
     
     if multihead: return ensemble_loss
