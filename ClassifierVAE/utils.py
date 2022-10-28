@@ -114,8 +114,8 @@ def init_loss(multihead, n_dist, n_class):
 
     def ensemble_loss(y_true, x_true, output):
         q_y = softmax(tf.reshape(output.gen_y, [-1, n_dist, n_class]))
-        log_q_y = tf.log(q_y + 1e-20)
-        kl_tmp = q_y * (log_q_y - tf.log(1.0/n_class))
+        log_q_y = tfm.log(q_y + 1e-20)
+        kl_tmp = q_y * (log_q_y - tfm.log(1.0/n_class))
         KL = tf.reduce_sum(kl_tmp, axis=(1, 2))
         elbo = tf.reduce_sum([tfm.reduce_prod(x_true[1:]) * bce(x_true, logits) for logits in output.x_logits]) - KL 
 
