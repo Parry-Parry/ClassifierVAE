@@ -38,11 +38,8 @@ class wrapper():
                 with tf.GradientTape() as tape:
                     output = self.model(x_batch, training=True)
                     loss_value = self.loss(y_batch, x_batch, output)
-                print(len(self.model.trainable_weights))
                 grads = tape.gradient(loss_value, self.model.trainable_weights)
-                print('grads computed')
                 self.optim.apply_gradients(zip(grads, self.model.trainable_weights))
-                print('grads applied')
                 self.train_metric.update_state(y_batch, self.maxi(output.y_pred))
         
             for x_batch, y_batch in test:
@@ -64,7 +61,7 @@ class wrapper():
                    'temperature': self.temp_var})
             
             if self.temp_anneal:
-                if step % self.step_anneal:
+                if step % 2:
                     self.temp_var.assign(self.temp_anneal(step))
             
         results = testing(test, self.model, self.model.n_class)
